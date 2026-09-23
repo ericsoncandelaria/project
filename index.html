@@ -1,0 +1,597 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Comprehensive Safety Protocol: Run, Hide, Fight</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #0f172a; /* Slate 900 */
+            color: #f8fafc;
+            margin: 0;
+            padding: 0;
+            overflow-x: hidden;
+            overscroll-behavior-y: contain; /* Prevents pull-to-refresh on mobile */
+            min-height: 100dvh;
+        }
+
+        .fade-in {
+            animation: fadeIn 0.4s ease-out forwards;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .screen-container {
+            display: none;
+        }
+
+        .active-screen {
+            display: flex;
+        }
+
+        /* --- ROBUST DRAG AND DROP STYLES --- */
+        .draggable {
+            touch-action: none !important;
+            cursor: grab;
+            position: absolute;
+            user-select: none;
+            -webkit-user-select: none;
+            z-index: 50;
+            will-change: transform, left, top;
+        }
+        
+        .draggable:active, .is-dragging {
+            cursor: grabbing;
+            z-index: 100;
+            transform: scale(1.05);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.5);
+        }
+
+        .game-area {
+            position: relative;
+            width: 100%;
+            height: clamp(240px, 48vw, 380px);
+            min-height: 240px;
+            overflow: hidden;
+            touch-action: none;
+        }
+
+        /* Interactive Elements */
+        .interact-btn {
+            transition: all 0.2s ease;
+            touch-action: manipulation;
+            min-height: 48px;
+        }
+        
+        .interact-btn:active {
+            transform: scale(0.95);
+        }
+
+        .room-dark { background-color: #1e293b !important; }
+        .blinds-closed { background: repeating-linear-gradient(180deg, #475569, #475569 10px, #334155 10px, #334155 12px); }
+
+        /* QA Buttons */
+        .qa-btn {
+            transition: all 0.2s;
+            min-height: 52px;
+        }
+        .qa-btn:hover:not(:disabled) {
+            background-color: #334155;
+        }
+        .qa-correct {
+            background-color: #166534 !important;
+            border-color: #22c55e !important;
+            color: #fff !important;
+        }
+        .qa-incorrect {
+            background-color: #7f1d1d !important;
+            border-color: #ef4444 !important;
+            color: #fca5a5 !important;
+            opacity: 0.7;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col items-center justify-center p-2 sm:p-4 bg-slate-900">
+
+    <main class="w-full max-w-3xl bg-slate-800 rounded-xl shadow-2xl overflow-hidden border border-slate-700 flex flex-col h-auto min-h-[100dvh] sm:h-[92vh] sm:max-h-[850px] sm:min-h-[650px]">
+        
+        <header class="bg-slate-950 p-4 text-center border-b border-slate-700 shrink-0 flex justify-between items-center">
+            <h1 class="text-lg sm:text-xl font-extrabold tracking-widest text-slate-200 uppercase">Emergency Protocol Module</h1>
+            <div class="text-xs font-bold text-slate-400 bg-slate-800 px-3 py-1 rounded" id="progress-indicator">Intro</div>
+        </header>
+
+        <section id="screen-intro" class="screen-container active-screen flex-col items-center justify-center p-5 sm:p-12 text-center flex-grow fade-in">
+            <h2 class="text-3xl font-bold mb-4 text-white uppercase tracking-wider">Active Threat Survival</h2>
+            <p class="text-slate-300 mb-8 max-w-xl leading-relaxed text-sm sm:text-base">
+                This comprehensive training module evaluates your decision-making and procedural knowledge during an active threat scenario in an educational setting.
+                <br><br>
+                You will navigate 5 interactive simulations and 4 knowledge checks based on standardized survival protocols.
+            </p>
+            <button onclick="startBackgroundAudio(); nextStep()" class="bg-blue-600 hover:bg-blue-500 text-white font-bold py-4 px-10 rounded-lg shadow-lg transition-all text-lg uppercase tracking-wider">
+                Initiate Module
+            </button>
+        </section>
+
+        <section id="screen-p1" class="screen-container flex-col p-3 sm:p-4 flex-grow fade-in bg-slate-800">
+            <div class="text-center mb-2 shrink-0">
+                <h2 class="text-xl font-bold text-blue-400 uppercase tracking-widest">Phase 1: Run</h2>
+                <p class="text-slate-300 text-sm mt-1">An active threat is in the building, but your path to an exterior door is clear. <br><strong class="text-white">Drag the student to the Safe Exit.</strong></p>
+            </div>
+            
+            <div id="area-run" class="game-area bg-slate-700 border-2 border-slate-600 rounded-lg shadow-inner mt-2">
+                <div id="target-exit" class="absolute top-4 right-4 w-28 h-28 bg-green-800/80 border-4 border-dashed border-green-400 rounded-xl flex flex-col items-center justify-center">
+                    <span class="text-green-100 font-bold tracking-wider text-sm uppercase text-center mt-2">Safe Exit</span>
+                </div>
+
+                <div id="drag-student" class="draggable flex flex-col items-center justify-center w-16 h-16 bg-blue-600 rounded-full border-2 border-blue-300 shadow-xl" style="bottom: 20px; left: 20px;">
+                    <span class="text-xs font-bold text-white">YOU</span>
+                </div>
+            </div>
+        </section>
+
+        <section id="screen-q1" class="screen-container flex-col p-4 sm:p-10 flex-grow fade-in bg-slate-800 justify-center">
+            <h2 class="text-xl font-bold text-slate-300 mb-6 uppercase tracking-widest border-b border-slate-600 pb-2">Knowledge Check: Evacuation</h2>
+            <p class="text-lg text-white mb-6 font-medium">When fleeing an unsafe area during an active threat, what should you do with your personal belongings (e.g., backpack, laptop)?</p>
+            
+            <div class="space-y-3 flex flex-col w-full" id="qa1-options">
+                <button onclick="handleQA(this, 1, false)" class="qa-btn text-left p-4 bg-slate-700 border border-slate-600 rounded text-slate-200 font-medium">A) Take only your most valuable items.</button>
+                <button onclick="handleQA(this, 1, true)" class="qa-btn text-left p-4 bg-slate-700 border border-slate-600 rounded text-slate-200 font-medium">B) Leave them behind immediately.</button>
+                <button onclick="handleQA(this, 1, false)" class="qa-btn text-left p-4 bg-slate-700 border border-slate-600 rounded text-slate-200 font-medium">C) Hide them before evacuating.</button>
+            </div>
+            
+            <div id="qa1-feedback" class="mt-6 text-sm font-bold hidden"></div>
+            <button id="qa1-next" onclick="nextStep()" class="mt-6 bg-blue-600 text-white font-bold py-3 px-6 rounded hidden self-end uppercase text-sm">Proceed to Phase 2</button>
+        </section>
+
+        <section id="screen-p2" class="screen-container flex-col p-3 sm:p-4 flex-grow fade-in bg-slate-800">
+            <div class="text-center mb-2 shrink-0">
+                <h2 class="text-xl font-bold text-yellow-400 uppercase tracking-widest">Phase 2: Hide</h2>
+                <p class="text-slate-300 text-sm mt-1">Evacuation is impossible. You are in a classroom. <br><strong class="text-white">Tap all 3 environmental controls to secure visibility.</strong></p>
+            </div>
+            
+            <div id="area-hide" class="game-area bg-slate-600 border-2 border-slate-500 rounded-lg shadow-inner transition-colors duration-700 mt-2">
+                <div class="absolute inset-0 p-4 flex justify-around items-center flex-wrap">
+                    <!-- Lock -->
+                    <button id="btn-lock" class="interact-btn w-28 h-40 bg-amber-900 border-4 border-amber-950 rounded shadow-lg relative flex flex-col items-center justify-center m-2" onclick="toggleHideElement('lock')">
+                        <div id="lock-status" class="w-6 h-6 bg-red-500 rounded-full mb-2 border-2 border-white transition-colors duration-300"></div>
+                        <span class="font-bold text-white uppercase text-xs bg-black/50 px-2 py-1 rounded">Lock Door</span>
+                    </button>
+                    <!-- Blinds -->
+                    <button id="btn-blinds" class="interact-btn w-32 h-32 bg-sky-200 border-4 border-slate-400 rounded shadow-lg relative overflow-hidden m-2" onclick="toggleHideElement('blinds')">
+                        <div id="blinds-status" class="absolute inset-0 transition-all duration-500"></div>
+                        <span class="absolute bottom-2 left-1/2 -translate-x-1/2 font-bold text-white uppercase text-xs bg-black/60 px-2 py-1 rounded z-10 whitespace-nowrap">Close Blinds</span>
+                    </button>
+                    <!-- Lights -->
+                    <button id="btn-lights" class="interact-btn w-20 h-28 bg-slate-200 border-2 border-slate-400 rounded shadow-lg flex flex-col items-center justify-center m-2" onclick="toggleHideElement('lights')">
+                        <div id="light-switch" class="w-6 h-10 bg-white border border-slate-300 shadow-sm transform -translate-y-2 transition-transform duration-300"></div>
+                        <span class="font-bold text-slate-800 uppercase text-[10px] mt-2">Lights Off</span>
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <section id="screen-q2" class="screen-container flex-col p-4 sm:p-10 flex-grow fade-in bg-slate-800 justify-center">
+            <h2 class="text-xl font-bold text-slate-300 mb-6 uppercase tracking-widest border-b border-slate-600 pb-2">Knowledge Check: Concealment</h2>
+            <p class="text-lg text-white mb-6 font-medium">While hiding in a secure location, what is the most critical action to take regarding your mobile device?</p>
+            
+            <div class="space-y-3 flex flex-col w-full" id="qa2-options">
+                <button onclick="handleQA(this, 2, false)" class="qa-btn text-left p-4 bg-slate-700 border border-slate-600 rounded text-slate-200 font-medium">A) Keep it on ring so police can call you.</button>
+                <button onclick="handleQA(this, 2, true)" class="qa-btn text-left p-4 bg-slate-700 border border-slate-600 rounded text-slate-200 font-medium">B) Silence it completely, including vibrate mode.</button>
+                <button onclick="handleQA(this, 2, false)" class="qa-btn text-left p-4 bg-slate-700 border border-slate-600 rounded text-slate-200 font-medium">C) Set it to vibrate only.</button>
+            </div>
+            
+            <div id="qa2-feedback" class="mt-6 text-sm font-bold hidden"></div>
+            <button id="qa2-next" onclick="nextStep()" class="mt-6 bg-blue-600 text-white font-bold py-3 px-6 rounded hidden self-end uppercase text-sm">Proceed to Phase 3</button>
+        </section>
+
+        <section id="screen-p3" class="screen-container flex-col p-3 sm:p-4 flex-grow fade-in bg-slate-800">
+            <div class="text-center mb-2 shrink-0">
+                <h2 class="text-xl font-bold text-orange-500 uppercase tracking-widest">Phase 3: Barricade</h2>
+                <p class="text-slate-300 text-sm mt-1">The door is locked, but you must reinforce it. <br><strong class="text-white">Drag 3 heavy items into the Barricade Zone.</strong></p>
+            </div>
+            
+            <div id="area-barricade" class="game-area bg-slate-700 border-2 border-slate-600 rounded-lg shadow-inner relative mt-2">
+                <div id="target-barricade" class="absolute top-0 left-1/2 -translate-x-1/2 w-48 h-32 bg-red-900/30 border-b-4 border-x-4 border-dashed border-red-500 rounded-b-lg flex flex-col items-center justify-center">
+                    <span class="text-red-300 font-bold tracking-widest uppercase text-sm">Barricade Zone</span>
+                    <span id="barricade-counter" class="text-white font-black text-2xl mt-1">0 / 3</span>
+                </div>
+
+                <div id="drag-desk1" class="draggable item-heavy flex items-center justify-center w-28 h-16 bg-amber-800 rounded border-t-4 border-amber-600 shadow-xl" style="bottom: 20px; left: 10px;">
+                    <span class="text-amber-200 font-bold text-[10px] uppercase">Heavy Desk 1</span>
+                </div>
+                <div id="drag-desk2" class="draggable item-heavy flex items-center justify-center w-28 h-16 bg-amber-900 rounded border-t-4 border-amber-700 shadow-xl" style="bottom: 20px; right: 10px;">
+                    <span class="text-amber-200 font-bold text-[10px] uppercase">Heavy Desk 2</span>
+                </div>
+                <div id="drag-cabinet" class="draggable item-heavy flex items-center justify-center w-20 h-20 bg-slate-600 rounded border-t-4 border-slate-400 shadow-xl" style="bottom: 100px; left: 40px;">
+                    <span class="text-slate-200 font-bold text-[10px] uppercase text-center">Filing<br>Cabinet</span>
+                </div>
+            </div>
+        </section>
+
+        <section id="screen-q3" class="screen-container flex-col p-4 sm:p-10 flex-grow fade-in bg-slate-800 justify-center">
+            <h2 class="text-xl font-bold text-slate-300 mb-6 uppercase tracking-widest border-b border-slate-600 pb-2">Knowledge Check: Security</h2>
+            <p class="text-lg text-white mb-6 font-medium">You are in a barricaded room and someone knocks, claiming to be the police. What is the correct action?</p>
+            
+            <div class="space-y-3 flex flex-col w-full" id="qa3-options">
+                <button onclick="handleQA(this, 3, false)" class="qa-btn text-left p-4 bg-slate-700 border border-slate-600 rounded text-slate-200 font-medium">A) Open the door immediately to let them in.</button>
+                <button onclick="handleQA(this, 3, false)" class="qa-btn text-left p-4 bg-slate-700 border border-slate-600 rounded text-slate-200 font-medium">B) Shout through the door to ask for their badge number.</button>
+                <button onclick="handleQA(this, 3, true)" class="qa-btn text-left p-4 bg-slate-700 border border-slate-600 rounded text-slate-200 font-medium">C) Do not open the door; wait for visual verification or official all-clear.</button>
+            </div>
+            
+            <div id="qa3-feedback" class="mt-6 text-sm font-bold hidden"></div>
+            <button id="qa3-next" onclick="nextStep()" class="mt-6 bg-blue-600 text-white font-bold py-3 px-6 rounded hidden self-end uppercase text-sm">Proceed to Phase 4</button>
+        </section>
+
+        <section id="screen-p4" class="screen-container flex-col p-3 sm:p-4 flex-grow fade-in bg-slate-800">
+            <div class="text-center mb-2 shrink-0">
+                <h2 class="text-xl font-bold text-red-500 uppercase tracking-widest">Phase 4: Last Resort</h2>
+                <p class="text-slate-300 text-sm mt-1">If the shooter breaches the room, you must fight. <br><strong class="text-white">Tap 3 items that are effective improvised weapons.</strong></p>
+            </div>
+            
+            <div id="area-weapons" class="game-area bg-slate-700 border-2 border-slate-600 rounded-lg shadow-inner mt-2 p-4 grid grid-cols-2 gap-4 place-items-center">
+                <button class="weapon-btn w-full h-24 bg-slate-600 rounded border-2 border-slate-500 font-bold flex flex-col items-center justify-center text-slate-200" onclick="selectWeapon(this, true)">
+                    <span class="text-2xl mb-1">🧯</span> Fire Extinguisher
+                </button>
+                <button class="weapon-btn w-full h-24 bg-slate-600 rounded border-2 border-slate-500 font-bold flex flex-col items-center justify-center text-slate-200" onclick="selectWeapon(this, false)">
+                    <span class="text-2xl mb-1">📝</span> Notebook
+                </button>
+                <button class="weapon-btn w-full h-24 bg-slate-600 rounded border-2 border-slate-500 font-bold flex flex-col items-center justify-center text-slate-200" onclick="selectWeapon(this, false)">
+                    <span class="text-2xl mb-1">🖊️</span> Pen
+                </button>
+                <button class="weapon-btn w-full h-24 bg-slate-600 rounded border-2 border-slate-500 font-bold flex flex-col items-center justify-center text-slate-200" onclick="selectWeapon(this, true)">
+                    <span class="text-2xl mb-1">🪑</span> Metal Chair
+                </button>
+                <button class="weapon-btn col-span-2 w-1/2 h-24 bg-slate-600 rounded border-2 border-slate-500 font-bold flex flex-col items-center justify-center text-slate-200" onclick="selectWeapon(this, true)">
+                    <span class="text-2xl mb-1">📚</span> Heavy Textbook
+                </button>
+            </div>
+        </section>
+
+        <section id="screen-q4" class="screen-container flex-col p-4 sm:p-10 flex-grow fade-in bg-slate-800 justify-center">
+            <h2 class="text-xl font-bold text-slate-300 mb-6 uppercase tracking-widest border-b border-slate-600 pb-2">Knowledge Check: Defense</h2>
+            <p class="text-lg text-white mb-6 font-medium">If you are forced to fight as an absolute last resort, how should you act?</p>
+            
+            <div class="space-y-3 flex flex-col w-full" id="qa4-options">
+                <button onclick="handleQA(this, 4, true)" class="qa-btn text-left p-4 bg-slate-700 border border-slate-600 rounded text-slate-200 font-medium">A) Commit entirely to your actions with maximum physical aggression.</button>
+                <button onclick="handleQA(this, 4, false)" class="qa-btn text-left p-4 bg-slate-700 border border-slate-600 rounded text-slate-200 font-medium">B) Strike once and attempt to run past them immediately.</button>
+                <button onclick="handleQA(this, 4, false)" class="qa-btn text-left p-4 bg-slate-700 border border-slate-600 rounded text-slate-200 font-medium">C) Attempt to negotiate or reason with the threat.</button>
+            </div>
+            
+            <div id="qa4-feedback" class="mt-6 text-sm font-bold hidden"></div>
+            <button id="qa4-next" onclick="nextStep()" class="mt-6 bg-blue-600 text-white font-bold py-3 px-6 rounded hidden self-end uppercase text-sm">Proceed to Phase 5</button>
+        </section>
+
+        <section id="screen-p5" class="screen-container flex-col p-3 sm:p-4 flex-grow fade-in bg-slate-800">
+            <div class="text-center mb-2 shrink-0">
+                <h2 class="text-xl font-bold text-blue-400 uppercase tracking-widest">Phase 5: Law Enforcement</h2>
+                <p class="text-slate-300 text-sm mt-1">Police have breached the area to neutralize the threat. <br><strong class="text-white">Tap both hands to keep them visible and empty.</strong></p>
+            </div>
+            
+            <div id="area-police" class="game-area bg-slate-700 border-2 border-slate-600 rounded-lg shadow-inner mt-2 flex items-center justify-center space-x-12 relative overflow-hidden">
+                <!-- Flashing police lights effect -->
+                <div class="absolute inset-0 bg-blue-500/10 animate-pulse pointer-events-none"></div>
+                <div class="absolute inset-0 bg-red-500/10 animate-pulse delay-75 pointer-events-none"></div>
+
+                <div class="text-center z-10">
+                    <button id="hand-left" class="w-24 h-32 bg-slate-800 border-4 border-slate-500 rounded-lg shadow-lg flex items-center justify-center mb-2 transition-colors duration-300" onclick="raiseHand('left')">
+                        <span class="text-4xl opacity-50">🤚</span>
+                    </button>
+                    <span class="text-slate-300 font-bold text-xs uppercase">Left Hand</span>
+                </div>
+                
+                <div class="text-center z-10">
+                    <button id="hand-right" class="w-24 h-32 bg-slate-800 border-4 border-slate-500 rounded-lg shadow-lg flex items-center justify-center mb-2 transition-colors duration-300 transform scale-x-[-1]" onclick="raiseHand('right')">
+                        <span class="text-4xl opacity-50">🤚</span>
+                    </button>
+                    <span class="text-slate-300 font-bold text-xs uppercase block transform">Right Hand</span>
+                </div>
+            </div>
+        </section>
+
+        <section id="screen-cert" class="screen-container flex-col items-center justify-center p-4 sm:p-6 text-center flex-grow fade-in bg-slate-100">
+            <div class="w-full max-w-xl bg-white p-8 border-8 border-double border-slate-400 shadow-xl text-slate-800 relative">
+                <div class="absolute top-4 left-4 opacity-10">
+                    <svg class="w-16 h-16" fill="currentColor" viewBox="0 0 24 24"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm-2 16l-4-4 1.41-1.41L10 14.17l6.59-6.59L18 9l-8 8z"/></svg>
+                </div>
+                
+                <h2 class="text-2xl sm:text-3xl font-black mb-2 uppercase tracking-widest text-slate-800">Certificate of Completion</h2>
+                <p class="text-slate-500 mb-6 uppercase text-xs font-bold tracking-wider border-b-2 border-slate-200 pb-2">Comprehensive Active Threat Training</p>
+                
+                <p class="text-sm text-slate-600 mb-4 font-medium">This acknowledges the successful completion of the interactive survival protocols:</p>
+                <div class="text-3xl sm:text-4xl font-black text-blue-900 mb-6 tracking-tight">RUN. HIDE. FIGHT.</div>
+                
+                <div class="bg-slate-50 p-4 rounded text-left border-l-4 border-slate-400 text-xs text-slate-700 mb-8 mt-4 font-medium">
+                    The participant has demonstrated situational awareness regarding evacuation, barricading procedures, and safe interaction with law enforcement during a crisis.
+                </div>
+
+                <div class="flex justify-between items-end border-t border-slate-300 pt-4 px-2 mt-8">
+                    <div class="text-left">
+                        <div id="cert-date" class="font-bold text-slate-800 border-b border-slate-400 w-28 pb-1 text-sm"></div>
+                        <div class="text-[10px] text-slate-500 mt-1 uppercase font-bold">Date Verified</div>
+                    </div>
+                    <div class="text-right flex flex-col items-end">
+                        <div class="font-bold text-slate-800 border-b border-slate-400 w-32 pb-1 font-serif italic text-sm">Safety Division</div>
+                        <div class="text-[10px] text-slate-500 mt-1 uppercase font-bold">Authorization</div>
+                    </div>
+                </div>
+            </div>
+            <button onclick="location.reload()" class="mt-6 text-blue-600 hover:text-blue-800 font-bold underline decoration-2 underline-offset-4 uppercase text-sm tracking-wider">
+                Restart Module
+            </button>
+        </section>
+
+    </main>
+
+    <audio id="bg-music-player" loop preload="auto" volume="0.35" style="display:none"></audio>
+
+    <script>
+        function startBackgroundAudio() {
+            const player = document.getElementById('bg-music-player');
+            if (!player) return;
+
+            const src = 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3';
+            if (player.getAttribute('src') !== src) {
+                player.setAttribute('src', src);
+            }
+
+            player.volume = 0.35;
+            player.play().catch(() => {
+                // Audio autoplay is blocked until user interaction; the button click is already user-initiated.
+            });
+        }
+
+        // --- STREAMING_CHUNK: State Management ---
+        const flow = [
+            'screen-intro', 
+            'screen-p1', 'screen-q1', 
+            'screen-p2', 'screen-q2', 
+            'screen-p3', 'screen-q3', 
+            'screen-p4', 'screen-q4', 
+            'screen-p5', 'screen-cert'
+        ];
+        
+        const progressLabels = [
+            'Intro', 'P1: Run', 'Q1: Run', 'P2: Hide', 'Q2: Hide', 
+            'P3: Barricade', 'Q3: Barricade', 'P4: Fight', 'Q4: Fight', 
+            'P5: Police', 'Complete'
+        ];
+
+        let currentStep = 0;
+
+        function nextStep() {
+            document.getElementById(flow[currentStep]).classList.remove('active-screen');
+            currentStep++;
+            document.getElementById(flow[currentStep]).classList.add('active-screen');
+            document.getElementById('progress-indicator').innerText = progressLabels[currentStep];
+            
+            // Generate date if reaching cert
+            if (flow[currentStep] === 'screen-cert') {
+                document.getElementById('cert-date').innerText = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+            }
+        }
+
+        // --- STREAMING_CHUNK: Q&A Engine ---
+        function handleQA(button, qNumber, isCorrect) {
+            const options = document.getElementById(`qa${qNumber}-options`).children;
+            const feedback = document.getElementById(`qa${qNumber}-feedback`);
+            const nextBtn = document.getElementById(`qa${qNumber}-next`);
+
+            if (isCorrect) {
+                for (let opt of options) {
+                    opt.disabled = true;
+                    opt.classList.remove('hover:bg-slate-700');
+                }
+
+                button.classList.add('qa-correct');
+                feedback.innerHTML = `<span class="text-green-400 border border-green-800 bg-green-900/30 px-3 py-2 rounded block">Correct. Proceed to the next phase.</span>`;
+                feedback.classList.remove('hidden');
+                nextBtn.classList.remove('hidden');
+                return;
+            }
+
+            button.classList.add('qa-incorrect');
+            button.disabled = true;
+            feedback.innerHTML = `<span class="text-red-400 border border-red-800 bg-red-900/30 px-3 py-2 rounded block">Incorrect. That action compromises safety. Please choose another answer.</span>`;
+            feedback.classList.remove('hidden');
+
+            for (let opt of options) {
+                if (opt !== button) {
+                    opt.disabled = false;
+                    opt.classList.remove('opacity-50');
+                }
+            }
+        }
+
+        // --- STREAMING_CHUNK: Bulletproof Drag and Drop Engine ---
+        function createDraggable(elementId, containerId, targetId, onSuccess) {
+            const el = document.getElementById(elementId);
+            const container = document.getElementById(containerId);
+            const target = document.getElementById(targetId);
+            
+            let isDragging = false;
+            let initialX, initialY;
+            let startLeft, startTop;
+
+            let originalCssLeft = el.style.left;
+            let originalCssTop = el.style.top;
+            let originalCssBottom = el.style.bottom;
+            let originalCssRight = el.style.right;
+
+            function computePixelPositions() {
+                const rect = el.getBoundingClientRect();
+                const containerRect = container.getBoundingClientRect();
+                el.style.bottom = 'auto';
+                el.style.right = 'auto';
+                el.style.left = (rect.left - containerRect.left) + 'px';
+                el.style.top = (rect.top - containerRect.top) + 'px';
+            }
+
+            el.addEventListener('pointerdown', (e) => {
+                e.preventDefault();
+                isDragging = true;
+                el.setPointerCapture(e.pointerId); 
+                el.classList.add('is-dragging');
+                
+                computePixelPositions();
+                
+                initialX = e.clientX;
+                initialY = e.clientY;
+                startLeft = parseFloat(el.style.left) || 0;
+                startTop = parseFloat(el.style.top) || 0;
+            });
+
+            el.addEventListener('pointermove', (e) => {
+                if (!isDragging) return;
+                const dx = e.clientX - initialX;
+                const dy = e.clientY - initialY;
+
+                let newLeft = startLeft + dx;
+                let newTop = startTop + dy;
+
+                const maxX = container.clientWidth - el.offsetWidth;
+                const maxY = container.clientHeight - el.offsetHeight;
+                
+                newLeft = Math.max(0, Math.min(newLeft, maxX));
+                newTop = Math.max(0, Math.min(newTop, maxY));
+
+                el.style.left = newLeft + 'px';
+                el.style.top = newTop + 'px';
+            });
+
+            el.addEventListener('pointerup', (e) => {
+                if (!isDragging) return;
+                isDragging = false;
+                el.releasePointerCapture(e.pointerId);
+                el.classList.remove('is-dragging');
+
+                const elRect = el.getBoundingClientRect();
+                const targetRect = target.getBoundingClientRect();
+
+                // AABB Collision with 10px buffer
+                const isOverlapping = !(
+                    elRect.right < targetRect.left + 10 || 
+                    elRect.left > targetRect.right - 10 || 
+                    elRect.bottom < targetRect.top + 10 || 
+                    elRect.top > targetRect.bottom - 10
+                );
+
+                if (isOverlapping) {
+                    onSuccess(el);
+                } else {
+                    el.style.transition = 'all 0.3s ease-out';
+                    el.style.left = originalCssLeft;
+                    el.style.top = originalCssTop;
+                    el.style.bottom = originalCssBottom;
+                    el.style.right = originalCssRight;
+                    setTimeout(() => el.style.transition = '', 300);
+                }
+            });
+            el.addEventListener('dragstart', e => e.preventDefault());
+        }
+
+        // --- STREAMING_CHUNK: Phase Init & Logic ---
+        
+        // P1: RUN
+        createDraggable('drag-student', 'area-run', 'target-exit', (el) => {
+            el.style.display = 'none';
+            const target = document.getElementById('target-exit');
+            target.classList.replace('bg-green-800/80', 'bg-green-600');
+            target.innerHTML = `<span class="font-black text-white text-xl">ESCAPED</span>`;
+            setTimeout(nextStep, 1000);
+        });
+
+        // P2: HIDE
+        const hideState = { lock: false, blinds: false, lights: false };
+        function toggleHideElement(element) {
+            if (hideState[element]) return;
+            hideState[element] = true;
+            
+            if (element === 'lock') {
+                document.getElementById('lock-status').classList.replace('bg-red-500', 'bg-green-500');
+                document.getElementById('btn-lock').classList.add('border-green-500');
+            } else if (element === 'blinds') {
+                document.getElementById('blinds-status').classList.add('blinds-closed');
+            } else if (element === 'lights') {
+                document.getElementById('light-switch').style.transform = 'translateY(8px)';
+                document.getElementById('area-hide').classList.add('room-dark');
+            }
+
+            if (hideState.lock && hideState.blinds && hideState.lights) {
+                setTimeout(nextStep, 1000);
+            }
+        }
+
+        // P3: BARRICADE
+        let barricadeCount = 0;
+        function handleBarricade(el) {
+            barricadeCount++;
+            el.style.pointerEvents = 'none';
+            el.style.border = '2px solid #4ade80';
+            el.style.bottom = 'auto';
+            el.style.top = (20 + (barricadeCount * 15)) + 'px';
+            el.style.left = (90 + (barricadeCount * 15)) + 'px';
+
+            document.getElementById('barricade-counter').innerText = `${barricadeCount} / 3`;
+
+            if (barricadeCount >= 3) {
+                const target = document.getElementById('target-barricade');
+                target.classList.replace('bg-red-900/30', 'bg-green-900/50');
+                target.classList.replace('border-red-500', 'border-green-500');
+                target.innerHTML = `<span class="text-green-300 font-bold tracking-widest uppercase text-lg mt-4">SECURED</span>`;
+                setTimeout(nextStep, 1200);
+            }
+        }
+        createDraggable('drag-desk1', 'area-barricade', 'target-barricade', handleBarricade);
+        createDraggable('drag-desk2', 'area-barricade', 'target-barricade', handleBarricade);
+        createDraggable('drag-cabinet', 'area-barricade', 'target-barricade', handleBarricade);
+
+        // P4: WEAPONS
+        let weaponsSelected = 0;
+        function selectWeapon(btn, isEffective) {
+            if (btn.disabled) return;
+            if (isEffective) {
+                btn.classList.replace('bg-slate-600', 'bg-green-700');
+                btn.classList.replace('border-slate-500', 'border-green-500');
+                btn.disabled = true;
+                weaponsSelected++;
+                if (weaponsSelected >= 3) {
+                    // Disable remaining
+                    document.querySelectorAll('.weapon-btn').forEach(b => b.disabled = true);
+                    setTimeout(nextStep, 1000);
+                }
+            } else {
+                btn.classList.replace('bg-slate-600', 'bg-red-900');
+                btn.classList.replace('border-slate-500', 'border-red-700');
+                setTimeout(() => {
+                    btn.classList.replace('bg-red-900', 'bg-slate-600');
+                    btn.classList.replace('border-red-700', 'border-slate-500');
+                }, 500);
+            }
+        }
+
+        // P5: POLICE ARRIVAL
+        const policeState = { left: false, right: false };
+        function raiseHand(side) {
+            if (policeState[side]) return;
+            policeState[side] = true;
+            
+            const btn = document.getElementById(`hand-${side}`);
+            btn.classList.replace('bg-slate-800', 'bg-green-800');
+            btn.classList.replace('border-slate-500', 'border-green-500');
+            btn.querySelector('span').style.opacity = '1';
+
+            if (policeState.left && policeState.right) {
+                setTimeout(nextStep, 1000);
+            }
+        }
+
+    </script>
+</body>
+</html>
